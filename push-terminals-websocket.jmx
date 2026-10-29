@@ -1,0 +1,915 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+<hashTree>
+<TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="ExampleCorp Push Terminals">
+<stringProp name="TestPlan.comments">Performance test of a push notification system for terminals: WSS connection + sendCommand commands. Connection settings and credentials come from properties (see .env.example). Requires the WebSocket Samplers plugin (Peter Doornbosch).</stringProp>
+<elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables"><collectionProp name="Arguments.arguments"><elementProp name="WS_HOST" elementType="Argument"><stringProp name="Argument.name">WS_HOST</stringProp><stringProp name="Argument.value">${__P(WS_HOST,push.example.com)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="TOKEN_HOST" elementType="Argument"><stringProp name="Argument.name">TOKEN_HOST</stringProp><stringProp name="Argument.value">${__P(TOKEN_HOST,push.example.com)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="WS_PORT" elementType="Argument"><stringProp name="Argument.name">WS_PORT</stringProp><stringProp name="Argument.value">${__P(WS_PORT,443)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="TENANT_ID" elementType="Argument"><stringProp name="Argument.name">TENANT_ID</stringProp><stringProp name="Argument.value">${__P(TENANT_ID,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="STATION_ID" elementType="Argument"><stringProp name="Argument.name">STATION_ID</stringProp><stringProp name="Argument.value">${__P(STATION_ID,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="TEST_USER" elementType="Argument"><stringProp name="Argument.name">TEST_USER</stringProp><stringProp name="Argument.value">${__P(TEST_USER,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="TEST_PASSWORD" elementType="Argument"><stringProp name="Argument.name">TEST_PASSWORD</stringProp><stringProp name="Argument.value">${__P(TEST_PASSWORD,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp><elementProp name="REAL_HOST" elementType="Argument"><stringProp name="Argument.name">REAL_HOST</stringProp><stringProp name="Argument.value">${__P(REAL_HOST,api.example.com)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp></collectionProp></elementProp>
+<boolProp name="TestPlan.functional_mode">false</boolProp>
+<boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+<boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+</TestPlan>
+<hashTree>
+<SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="0 - Login (get JWT)">
+<stringProp name="TestPlan.comments">If the login or the terminal count fails, the test stops (on_sample_error = stoptest).</stringProp>
+<stringProp name="ThreadGroup.num_threads">1</stringProp>
+<stringProp name="ThreadGroup.ramp_time">1</stringProp>
+<boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+<stringProp name="ThreadGroup.on_sample_error">stoptest</stringProp>
+<elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller"><stringProp name="LoopController.loops">1</stringProp><boolProp name="LoopController.continue_forever">false</boolProp></elementProp>
+</SetupThreadGroup>
+<hashTree>
+<HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Header - login">
+<collectionProp name="HeaderManager.headers"><elementProp name="" elementType="Header"><stringProp name="Header.name">X-Tenant-Id</stringProp><stringProp name="Header.value">${TENANT_ID}</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">X-Station-Id</stringProp><stringProp name="Header.value">${STATION_ID}</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">Content-Type</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">username</stringProp><stringProp name="Header.value">${TEST_USER}</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">X-Real-Host</stringProp><stringProp name="Header.value">${REAL_HOST}</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">Authorization</stringProp><stringProp name="Header.value">${loginBasicAuthHeader}</stringProp></elementProp></collectionProp>
+</HeaderManager>
+<hashTree/>
+<HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="0.2 - POST access-token (get JWT)">
+<stringProp name="HTTPSampler.domain">${TOKEN_HOST}</stringProp>
+<stringProp name="HTTPSampler.port">${WS_PORT}</stringProp>
+<stringProp name="HTTPSampler.protocol">https</stringProp>
+<stringProp name="HTTPSampler.path">${__P(AUTH_PATH,/auth/token)}</stringProp>
+<boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+<stringProp name="HTTPSampler.method">POST</stringProp>
+<boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+<boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+<elementProp name="HTTPsampler.Arguments" elementType="Arguments"><collectionProp name="Arguments.arguments"><elementProp name="" elementType="HTTPArgument"><boolProp name="HTTPArgument.always_encode">false</boolProp><stringProp name="Argument.value">{&quot;username&quot;:&quot;${TEST_USER}&quot;,&quot;password&quot;:&quot;${TEST_PASSWORD}&quot;}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp></collectionProp></elementProp>
+</HTTPSamplerProxy>
+<hashTree>
+<JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="0.1 - Build Basic Auth header">
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">// Builds the Authorization: Basic header from TEST_USER/TEST_PASSWORD.
+String username = vars.get(&quot;TEST_USER&quot;) ?: &quot;&quot;
+String password = vars.get(&quot;TEST_PASSWORD&quot;) ?: &quot;&quot;
+vars.put(&quot;loginBasicAuthHeader&quot;, &quot;Basic &quot; + Base64.getEncoder().encodeToString((username + &quot;:&quot; + password).getBytes(&quot;UTF-8&quot;)))</stringProp>
+</JSR223PreProcessor>
+<hashTree/>
+<JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="0.3 - Extract JWT and refresh_token and store them as properties">
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import groovy.json.JsonSlurper
+
+// The response nests access_token/refresh_token under &quot;data&quot;.
+// Without access_token the sample fails and the setUp stops the test (on_sample_error = stoptest).
+String responseText = prev.getResponseDataAsString()
+def token = null
+def refresh = null
+def expiresIn = null
+try {
+    def json = new JsonSlurper().parseText(responseText)
+    def payload = (json instanceof Map &amp;&amp; json.data instanceof Map) ? json.data : json
+    token = payload.access_token ?: payload.accessToken ?: payload.token ?: payload.jwt
+    refresh = payload.refresh_token ?: payload.refreshToken
+    expiresIn = payload.expires_in
+} catch (Exception e) {
+    log.error(&quot;access-token response is not valid JSON: &quot; + e.getMessage())
+}
+
+if (token == null) {
+    prev.setSuccessful(false)
+    prev.setResponseMessage(&quot;access_token missing from response: test stopped&quot;)
+    log.error(&quot;Login failed: access_token missing (HTTP &quot; + prev.getResponseCode() + &quot;). Test stopped.&quot;)
+    return
+}
+props.put(&quot;JWT_TOKEN&quot;, token.toString())
+log.info(&quot;JWT obtained (valid for &quot; + (expiresIn ?: &quot;?&quot;) + &quot;s)&quot;)
+
+if (refresh != null) {
+    props.put(&quot;REFRESH_TOKEN&quot;, refresh.toString())
+} else {
+    log.warn(&quot;No refresh_token in response: the sendCommand refresh_token cookie will be empty&quot;)
+}</stringProp>
+</JSR223PostProcessor>
+<hashTree/>
+<ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check login OK (2xx)">
+<collectionProp name="Asserion.test_strings"><stringProp name="0">2\d\d</stringProp></collectionProp>
+<stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+<boolProp name="Assertion.assume_success">false</boolProp>
+<intProp name="Assertion.test_type">1</intProp>
+<stringProp name="Assertion.custom_message"></stringProp>
+</ResponseAssertion>
+<hashTree/>
+</hashTree>
+<JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="0.4 - Count terminals from CSV">
+<stringProp name="TestPlan.comments">Number of terminals = non-empty lines of device_ids.csv (override with -JDEVICE_COUNT=N, never above the CSV line count).</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import org.apache.jmeter.services.FileServer
+
+// Counts the non-empty lines of device_ids.csv: number of threads (terminals) of Thread Group 1.
+def csvFile = new File(FileServer.getFileServer().getBaseDir(), &quot;device_ids.csv&quot;)
+int count = csvFile.exists() ? csvFile.readLines().findAll { it.trim() }.size() : 0
+props.put(&quot;DEVICE_COUNT_AUTO&quot;, String.valueOf(count))
+if (count == 0) {
+    SampleResult.setSuccessful(false)
+    SampleResult.setResponseMessage(&quot;device_ids.csv missing or empty: test stopped&quot;)
+    log.error(&quot;device_ids.csv missing or empty in &quot; + csvFile.getAbsolutePath())
+} else {
+    log.info(&quot;Terminals in device_ids.csv: &quot; + count)
+}</stringProp>
+</JSR223Sampler>
+<hashTree/>
+<JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="0.5 - Initialize counters and parameters">
+<stringProp name="TestPlan.comments">Shared counters, queue of commands waiting for WAKE and -J parameters: CMD_PER_TERMINAL, CMD_INTERVAL_MS, PING_INTERVAL_MS, WS_MIN_DURATION_SEC, WS_MAX_DURATION_SEC, WAKE_GRACE_SEC, MATCH_WINDOW_SEC, AUTH_TIMEOUT_MS, AUTH_STRICT, AUTH_OK_MATCH, WAKE_MATCH, WS_RECONNECT, RECONNECT_DELAY_MS, CHECK_RESULT_CODE, CMD_TERMINALS (how many terminals send commands: the last N started, default all), CMD_STEPS/CMD_STEP_SEC (stepped commands: terminals with commands split into CMD_STEPS groups, group g starts g*CMD_STEP_SEC later), LOSS_THRESHOLD_PCT (result OK if lost messages are below this percentage of sent commands, default 3.5).</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+import org.apache.jmeter.services.FileServer
+
+// Shared counters, queue of commands waiting for WAKE and parameters (all overridable with -J&lt;name&gt;=value).
+long now = System.currentTimeMillis()
+
+def S = new ConcurrentHashMap&lt;String, AtomicLong&gt;()
+[&quot;ws_open_ok&quot;, &quot;ws_open_fail&quot;, &quot;ws_reconnect_attempt&quot;, &quot;ws_reconnect_ok&quot;, &quot;ws_reconnect_fail&quot;,
+ &quot;auth_ok&quot;, &quot;auth_unconfirmed&quot;, &quot;auth_fail&quot;, &quot;ws_drop&quot;, &quot;ws_close_ok&quot;, &quot;ws_close_fail&quot;,
+ &quot;ping_sent&quot;, &quot;pong_received&quot;, &quot;server_ping&quot;, &quot;pong_sent&quot;,
+ &quot;wake_received&quot;, &quot;wake_matched&quot;, &quot;wake_unmatched&quot;, &quot;wake_latency_sum&quot;, &quot;wake_latency_max&quot;,
+ &quot;cmd_sent_ok&quot;, &quot;cmd_sent_ko&quot;, &quot;cmd_wake_on_failed_post&quot;, &quot;cmd_expired&quot;].each { S.put(it, new AtomicLong()) }
+
+def P = props
+def p = { String name, String dflt -&gt; String v = P.getProperty(name); (v == null || v.trim().isEmpty()) ? dflt : v.trim() }
+
+// Effective terminals: never more than the CSV lines (extra threads stop at end of file).
+int csvCount = Integer.parseInt(p(&quot;DEVICE_COUNT_AUTO&quot;, &quot;0&quot;))
+int deviceCount = Math.min(Integer.parseInt(p(&quot;DEVICE_COUNT&quot;, String.valueOf(csvCount))), csvCount)
+int cmdPerTerminal = Integer.parseInt(p(&quot;CMD_PER_TERMINAL&quot;, &quot;5&quot;))
+long cmdIntervalMs = Long.parseLong(p(&quot;CMD_INTERVAL_MS&quot;, &quot;60000&quot;))
+// Terminals sending commands: the last CMD_TERMINALS started by the ramp-up (default all); the others only hold the connection.
+int cmdTerminals = Math.min(Integer.parseInt(p(&quot;CMD_TERMINALS&quot;, String.valueOf(deviceCount))), deviceCount)
+// Per-terminal durations, measured from its first connection (so independent of the ramp-up).
+long minDurationSec = Long.parseLong(p(&quot;WS_MIN_DURATION_SEC&quot;, &quot;0&quot;))
+long maxDurationSec = Long.parseLong(p(&quot;WS_MAX_DURATION_SEC&quot;,
+        String.valueOf(Math.max((long) (cmdPerTerminal * cmdIntervalMs / 1000) + 900L, minDurationSec + 60L))))
+
+def C = new ConcurrentHashMap&lt;String, Object&gt;()
+C.put(&quot;cmdPerTerminal&quot;, cmdPerTerminal)
+C.put(&quot;cmdTerminals&quot;, cmdTerminals)
+C.put(&quot;cmdSteps&quot;, Math.max(1, Integer.parseInt(p(&quot;CMD_STEPS&quot;, &quot;1&quot;))))
+C.put(&quot;cmdStepMs&quot;, Long.parseLong(p(&quot;CMD_STEP_SEC&quot;, &quot;0&quot;)) * 1000L)
+// Two-plateau profile (active if CMD_RAMP1_SEC &gt; 0): linear ramp 0 -&gt; CMD_TERMINALS_L1 terminals,
+// plateau CMD_HOLD1_SEC, linear ramp up to CMD_TERMINALS, plateau CMD_HOLD2_SEC; commands end at the same time for all.
+// Time zero of the commands: end of the connection ramp-up + CMD_START_DELAY_SEC.
+long pr1 = Long.parseLong(p(&quot;CMD_RAMP1_SEC&quot;, &quot;0&quot;)) * 1000L
+long ph1 = Long.parseLong(p(&quot;CMD_HOLD1_SEC&quot;, &quot;0&quot;)) * 1000L
+long pr2 = Long.parseLong(p(&quot;CMD_RAMP2_SEC&quot;, &quot;0&quot;)) * 1000L
+long ph2 = Long.parseLong(p(&quot;CMD_HOLD2_SEC&quot;, &quot;0&quot;)) * 1000L
+int pl1 = Math.min(Integer.parseInt(p(&quot;CMD_TERMINALS_L1&quot;, String.valueOf(cmdTerminals))), cmdTerminals)
+boolean profile = pr1 &gt; 0L
+C.put(&quot;cmdProfile&quot;, profile)
+C.put(&quot;cmdAnchorTs&quot;, now + Long.parseLong(p(&quot;RAMPUP_SEC&quot;, &quot;1&quot;)) * 1000L + Long.parseLong(p(&quot;CMD_START_DELAY_SEC&quot;, &quot;60&quot;)) * 1000L)
+long profEnd = pr1 + ph1 + pr2 + ph2
+int stepsN = (int) C.get(&quot;cmdSteps&quot;)
+long stepMs = (long) C.get(&quot;cmdStepMs&quot;)
+// Returns [offset ms, number of commands] for the command terminal with index idx (0 = first started).
+def cmdPlan = { int idx -&gt;
+    if (!profile) { return [cmdTerminals &gt; 0 ? (long) ((idx * stepsN).intdiv(cmdTerminals)) * stepMs : 0L, cmdPerTerminal] }
+    long off = idx &lt; pl1 ? (long) ((pr1 * idx).intdiv(Math.max(pl1, 1)))
+            : pr1 + ph1 + (cmdTerminals &gt; pl1 ? (long) ((pr2 * (idx - pl1)).intdiv(cmdTerminals - pl1)) : 0L)
+    return [off, (int) ((profEnd - off + cmdIntervalMs - 1).intdiv(cmdIntervalMs))]
+}
+C.put(&quot;cmdPlan&quot;, cmdPlan)
+long cmdExpected = 0L
+for (int i = 0; i &lt; cmdTerminals; i++) { cmdExpected += (int) cmdPlan.call(i)[1] }
+C.put(&quot;cmdExpected&quot;, cmdExpected)
+C.put(&quot;cmdIntervalMs&quot;, cmdIntervalMs)
+C.put(&quot;minDurationMs&quot;, minDurationSec * 1000L)
+C.put(&quot;maxDurationMs&quot;, maxDurationSec * 1000L)
+C.put(&quot;pingIntervalMs&quot;, Long.parseLong(p(&quot;PING_INTERVAL_MS&quot;, &quot;25000&quot;)))
+C.put(&quot;authTimeoutMs&quot;, Long.parseLong(p(&quot;AUTH_TIMEOUT_MS&quot;, &quot;10000&quot;)))
+C.put(&quot;authStrict&quot;, Boolean.parseBoolean(p(&quot;AUTH_STRICT&quot;, &quot;false&quot;)))
+C.put(&quot;authMatch&quot;, p(&quot;AUTH_OK_MATCH&quot;, &quot;AUTH_OK&quot;))
+C.put(&quot;wakeMatch&quot;, p(&quot;WAKE_MATCH&quot;, &quot;\&quot;type\&quot;:\&quot;WAKE\&quot;&quot;))
+C.put(&quot;graceMs&quot;, Long.parseLong(p(&quot;WAKE_GRACE_SEC&quot;, &quot;30&quot;)) * 1000L)
+C.put(&quot;matchWindowMs&quot;, Long.parseLong(p(&quot;MATCH_WINDOW_SEC&quot;, &quot;300&quot;)) * 1000L)
+C.put(&quot;reconnect&quot;, Boolean.parseBoolean(p(&quot;WS_RECONNECT&quot;, &quot;false&quot;)))
+C.put(&quot;checkResultCode&quot;, Boolean.parseBoolean(p(&quot;CHECK_RESULT_CODE&quot;, &quot;true&quot;)))
+// Acceptance criterion: result OK if lost messages (failed POSTs + not delivered) are below this % of sent commands.
+double lossThresholdPct = Double.parseDouble(p(&quot;LOSS_THRESHOLD_PCT&quot;, &quot;3.5&quot;))
+C.put(&quot;droppedTerminals&quot;, ConcurrentHashMap.newKeySet())
+C.put(&quot;deviceCount&quot;, deviceCount)
+C.put(&quot;testStartTs&quot;, now)
+C.put(&quot;lastWriteTs&quot;, new AtomicLong())
+
+def reportDir = new File(FileServer.getFileServer().getBaseDir(), &quot;results&quot;)
+if (!reportDir.exists()) { reportDir.mkdirs() }
+String reportPath = new File(reportDir, &quot;connection_summary_&quot; + new Date(now).format(&quot;yyyy-MM-dd_HH-mm-ss&quot;) + &quot;.txt&quot;).getAbsolutePath()
+
+props.put(&quot;PT_STATS&quot;, S)
+props.put(&quot;PT_PENDING&quot;, new ConcurrentHashMap&lt;String, Object&gt;())
+props.put(&quot;PT_CTRL&quot;, C)
+props.put(&quot;PT_FINAL&quot;, &quot;false&quot;)
+
+// Single summary rendering function, used by the live listener (3) and by the final tearDown (3.1).
+def render = { boolean finalRun -&gt;
+    synchronized (C) {
+        long t = System.currentTimeMillis()
+        def v = { String k -&gt; S.get(k)?.get() ?: 0L }
+        long pending = 0L
+        P.get(&quot;PT_PENDING&quot;).values().each { pending += it.size() }
+        long opened = v(&quot;ws_open_ok&quot;) + v(&quot;ws_reconnect_ok&quot;)
+        long active = Math.max(0L, opened - v(&quot;ws_drop&quot;) - v(&quot;ws_close_ok&quot;) - v(&quot;ws_close_fail&quot;))
+        long matched = v(&quot;wake_matched&quot;)
+        long sent = v(&quot;cmd_sent_ok&quot;) + v(&quot;cmd_sent_ko&quot;)
+        long expected = (long) C.get(&quot;cmdExpected&quot;)
+        long notSent = Math.max(0L, expected - sent)
+        long notDelivered = finalRun ? pending + v(&quot;cmd_expired&quot;) : v(&quot;cmd_expired&quot;)
+        String avgLat = matched &gt; 0 ? String.valueOf((long) (v(&quot;wake_latency_sum&quot;) / matched)) : &quot;-&quot;
+        String pct = v(&quot;cmd_sent_ok&quot;) &gt; 0 ? String.format(Locale.ROOT, &quot;%.2f%%&quot;, 100.0d * matched / v(&quot;cmd_sent_ok&quot;)) : &quot;-&quot;
+        // Lost messages = failed POSTs + accepted commands not delivered, over the total commands sent.
+        long lost = v(&quot;cmd_sent_ko&quot;) + notDelivered
+        double lostPct = sent &gt; 0 ? 100.0d * lost / sent : 0.0d
+        String lostPctS = sent &gt; 0 ? String.format(Locale.ROOT, &quot;%.2f%%&quot;, lostPct) : &quot;-&quot;
+        String thrS = String.format(Locale.ROOT, &quot;%s%%&quot;, String.valueOf(lossThresholdPct))
+        // Result (acceptance criterion): OK if lost messages are below LOSS_THRESHOLD_PCT.
+        // With no commands sent (connections-only test): OK if no failed opens and no disconnections.
+        boolean esitoOk = sent &gt; 0 ? lostPct &lt; lossThresholdPct
+                : (v(&quot;ws_open_fail&quot;) == 0 &amp;&amp; v(&quot;ws_drop&quot;) == 0 &amp;&amp; v(&quot;auth_fail&quot;) == 0)
+        def sb = new StringBuilder()
+        sb &lt;&lt; &quot;Push Terminals System Summary - &quot; &lt;&lt; (finalRun ? &quot;FINAL&quot; : &quot;updated at runtime&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Test start time:                  &quot; &lt;&lt; new Date((long) C.get(&quot;testStartTs&quot;)).format(&quot;yyyy-MM-dd HH:mm:ss&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Last update:                      &quot; &lt;&lt; new Date(t).format(&quot;yyyy-MM-dd HH:mm:ss&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Test end time:                    &quot; &lt;&lt; (finalRun ? new Date(t).format(&quot;yyyy-MM-dd HH:mm:ss&quot;) : &quot;-&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;------------------------------------------------------------\n&quot;
+        sb &lt;&lt; &quot;CONNECTIONS\n&quot;
+        sb &lt;&lt; &quot;Expected terminals:               &quot; &lt;&lt; deviceCount &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Connections opened OK:            &quot; &lt;&lt; v(&quot;ws_open_ok&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Failed opens:                     &quot; &lt;&lt; v(&quot;ws_open_fail&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Currently active connections:     &quot; &lt;&lt; active &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;AUTH confirmed (AUTH_OK):         &quot; &lt;&lt; v(&quot;auth_ok&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;AUTH not confirmed in timeout:    &quot; &lt;&lt; v(&quot;auth_unconfirmed&quot;) &lt;&lt; (C.get(&quot;authStrict&quot;) ? &quot; (AUTH_STRICT: connection closed)&quot; : &quot; (connection kept)&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Unexpected disconnections:        &quot; &lt;&lt; v(&quot;ws_drop&quot;) &lt;&lt; &quot; (terminals involved: &quot; &lt;&lt; C.get(&quot;droppedTerminals&quot;).size() &lt;&lt; &quot;)\n&quot;
+        sb &lt;&lt; &quot;Reconnects attempted/OK/failed:   &quot; &lt;&lt; v(&quot;ws_reconnect_attempt&quot;) &lt;&lt; &quot; / &quot; &lt;&lt; v(&quot;ws_reconnect_ok&quot;) &lt;&lt; &quot; / &quot; &lt;&lt; v(&quot;ws_reconnect_fail&quot;) &lt;&lt; (C.get(&quot;reconnect&quot;) ? &quot;&quot; : &quot; (WS_RECONNECT disabled)&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Regular closes (OK/failed):       &quot; &lt;&lt; v(&quot;ws_close_ok&quot;) &lt;&lt; &quot; / &quot; &lt;&lt; v(&quot;ws_close_fail&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;------------------------------------------------------------\n&quot;
+        sb &lt;&lt; &quot;KEEPALIVE\n&quot;
+        sb &lt;&lt; &quot;PING sent / PONG received:        &quot; &lt;&lt; v(&quot;ping_sent&quot;) &lt;&lt; &quot; / &quot; &lt;&lt; v(&quot;pong_received&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;PING from server / PONG replied:  &quot; &lt;&lt; v(&quot;server_ping&quot;) &lt;&lt; &quot; / &quot; &lt;&lt; v(&quot;pong_sent&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;------------------------------------------------------------\n&quot;
+        sb &lt;&lt; &quot;COMMANDS / WAKE\n&quot;
+        sb &lt;&lt; &quot;Expected commands:                &quot; &lt;&lt; expected &lt;&lt; &quot; (&quot; &lt;&lt; cmdTerminals &lt;&lt; &quot; terminals with commands&quot; &lt;&lt; (C.get(&quot;cmdProfile&quot;) ? &quot;, two-plateau profile&quot; : &quot; x &quot; + cmdPerTerminal) &lt;&lt; &quot;)\n&quot;
+        sb &lt;&lt; &quot;POST sendCommand OK (2xx + 00):   &quot; &lt;&lt; v(&quot;cmd_sent_ok&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;POST sendCommand failed:          &quot; &lt;&lt; v(&quot;cmd_sent_ko&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;WAKE received:                    &quot; &lt;&lt; v(&quot;wake_received&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;  matched to a sent command:      &quot; &lt;&lt; matched &lt;&lt; &quot; (&quot; &lt;&lt; pct &lt;&lt; &quot; of OK commands)\n&quot;
+        sb &lt;&lt; &quot;  for POSTs later marked failed:  &quot; &lt;&lt; v(&quot;cmd_wake_on_failed_post&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;  with no pending command:        &quot; &lt;&lt; v(&quot;wake_unmatched&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Commands waiting for WAKE:        &quot; &lt;&lt; pending &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Commands expired without WAKE:    &quot; &lt;&lt; v(&quot;cmd_expired&quot;) &lt;&lt; &quot; (after &quot; &lt;&lt; ((long) C.get(&quot;matchWindowMs&quot;) / 1000) &lt;&lt; &quot;s)\n&quot;
+        sb &lt;&lt; &quot;Estimated POST-&gt;WAKE latency (ms): avg &quot; &lt;&lt; avgLat &lt;&lt; &quot; / max &quot; &lt;&lt; (matched &gt; 0 ? v(&quot;wake_latency_max&quot;) : &quot;-&quot;) &lt;&lt; &quot;\n&quot;
+        sb &lt;&lt; &quot;Lost messages (POST KO + not delivered): &quot; &lt;&lt; lost &lt;&lt; &quot; of &quot; &lt;&lt; sent &lt;&lt; &quot; sent (&quot; &lt;&lt; lostPctS &lt;&lt; &quot;, OK threshold &lt; &quot; &lt;&lt; thrS &lt;&lt; &quot;)&quot; &lt;&lt; (finalRun ? &quot;&quot; : &quot; - at runtime, commands still pending are excluded&quot;) &lt;&lt; &quot;\n&quot;
+        if (finalRun) {
+            sb &lt;&lt; &quot;------------------------------------------------------------\n&quot;
+            sb &lt;&lt; &quot;Commands NOT sent:                &quot; &lt;&lt; notSent &lt;&lt; &quot; (no connection or test interrupted)\n&quot;
+            sb &lt;&lt; &quot;Commands NOT delivered:           &quot; &lt;&lt; notDelivered &lt;&lt; &quot;\n&quot;
+            sb &lt;&lt; &quot;Result: &quot; &lt;&lt; (sent &gt; 0
+                    ? (esitoOk ? &quot;OK&quot; : &quot;KO&quot;) + &quot; - lost messages &quot; + lostPctS + (esitoOk ? &quot; below&quot; : &quot; at or above&quot;) + &quot; the threshold of &quot; + thrS + &quot; (LOSS_THRESHOLD_PCT)&quot;
+                    : (esitoOk ? &quot;OK - no commands sent, connections stable&quot; : &quot;KO - no commands sent, failed opens or disconnections&quot;)) &lt;&lt; &quot;\n&quot;
+        }
+        new File(reportPath).write(sb.toString(), &quot;UTF-8&quot;)
+        C.get(&quot;lastWriteTs&quot;).set(t)
+        return [sb.toString(), esitoOk]
+    }
+}
+props.put(&quot;PT_RENDER&quot;, render)
+render.call(false)
+
+String info = &quot;Parameters: terminals=&quot; + deviceCount + &quot; terminals with commands=&quot; + cmdTerminals + &quot; steps=&quot; + C.get(&quot;cmdSteps&quot;) + &quot;x&quot; + ((long) C.get(&quot;cmdStepMs&quot;) / 1000) + &quot;s&quot; + &quot; profile=&quot; + (profile ? (pl1 + &quot;/&quot; + cmdTerminals + &quot; terminals, ramps/plateaus &quot; + pr1/1000 + &quot;/&quot; + ph1/1000 + &quot;/&quot; + pr2/1000 + &quot;/&quot; + ph2/1000 + &quot;s, expected commands &quot; + cmdExpected) : &quot;no&quot;) + &quot; commands/terminal=&quot; + cmdPerTerminal + &quot; interval=&quot; + cmdIntervalMs +
+        &quot;ms per-terminal duration min/max=&quot; + minDurationSec + &quot;/&quot; + maxDurationSec + &quot;s ping=&quot; + C.get(&quot;pingIntervalMs&quot;) +
+        &quot;ms reconnect=&quot; + C.get(&quot;reconnect&quot;) + &quot; AUTH_STRICT=&quot; + C.get(&quot;authStrict&quot;) + &quot; loss threshold=&quot; + lossThresholdPct + &quot;% report=&quot; + reportPath
+log.info(info)
+SampleResult.setResponseData(info, &quot;UTF-8&quot;)</stringProp>
+</JSR223Sampler>
+<hashTree/>
+</hashTree>
+<ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="1 - Terminals (WSS + sendCommand)">
+<stringProp name="TestPlan.comments">One thread per terminal: WSS connection, keepalive and sending its own sendCommand commands.</stringProp>
+<stringProp name="ThreadGroup.num_threads">${__P(DEVICE_COUNT,${__property(DEVICE_COUNT_AUTO)})}</stringProp>
+<stringProp name="ThreadGroup.ramp_time">${__P(RAMPUP_SEC,1)}</stringProp>
+<boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+<stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+<elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller"><stringProp name="LoopController.loops">1</stringProp><boolProp name="LoopController.continue_forever">false</boolProp></elementProp>
+</ThreadGroup>
+<hashTree>
+<CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV - terminal_ids (one per thread)">
+<stringProp name="delimiter">,</stringProp>
+<stringProp name="fileEncoding">UTF-8</stringProp>
+<stringProp name="filename">device_ids.csv</stringProp>
+<boolProp name="quotedData">false</boolProp>
+<boolProp name="recycle">false</boolProp>
+<stringProp name="shareMode">shareMode.group</stringProp>
+<boolProp name="stopThread">true</boolProp>
+<stringProp name="variableNames">terminalId</stringProp>
+<boolProp name="ignoreFirstLine">false</boolProp>
+</CSVDataSet>
+<hashTree/>
+<HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Header - JWT">
+<stringProp name="TestPlan.comments">Used by both the WSS upgrade and the sendCommand POST.</stringProp>
+<collectionProp name="HeaderManager.headers"><elementProp name="" elementType="Header"><stringProp name="Header.name">Authorization</stringProp><stringProp name="Header.value">Bearer ${__property(JWT_TOKEN)}</stringProp></elementProp></collectionProp>
+</HeaderManager>
+<hashTree/>
+<JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="1.0 - Classify frames, schedule PING/commands, connection state">
+<stringProp name="TestPlan.comments">Single control point: classifies frames, updates counters, matches WAKEs to commands and sets the controller variables (wsAlive, authWaiting, wsContinue, pingDue, pongDue, cmdDue, closeNeeded, drainMore, wsSession, reconnectPause, readTimeoutMs).</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import java.util.concurrent.atomic.AtomicLong
+
+// Single control point of the terminal: classifies every frame read, updates the counters
+// and decides the next step (wait for AUTH_OK, continuous listening, PING, send command, drain, close, reconnect).
+def S = props.get(&quot;PT_STATS&quot;)
+def C = props.get(&quot;PT_CTRL&quot;)
+def Q = props.get(&quot;PT_PENDING&quot;)
+if (S == null || C == null || Q == null) {
+    log.error(&quot;Counters not initialized: setUp sampler 0.5 was not executed&quot;)
+    return
+}
+def inc = { String k, long d = 1L -&gt;
+    S.computeIfAbsent(k, { new AtomicLong() } as java.util.function.Function).addAndGet(d)
+}
+def getL = { String k -&gt; Long.parseLong(vars.get(k) ?: &quot;0&quot;) }
+
+String tid = vars.get(&quot;terminalId&quot;)
+long now = System.currentTimeMillis()
+String cls = sampler.getClass().getSimpleName()
+boolean ok = prev.isSuccessful()
+String phase = vars.get(&quot;wsPhase&quot;) ?: &quot;INIT&quot;
+long pingInterval = (long) C.get(&quot;pingIntervalMs&quot;)
+// Only the last CMD_TERMINALS threads started send commands; the others get 0 commands (connection only).
+int cmdIdx = ctx.getThreadNum() - ((int) C.get(&quot;deviceCount&quot;) - (int) C.get(&quot;cmdTerminals&quot;))
+def cmdPlanT = cmdIdx &gt;= 0 ? C.get(&quot;cmdPlan&quot;).call(cmdIdx) : null
+int cmdPerTerminal = cmdPlanT == null ? 0 : (int) cmdPlanT[1]
+long cmdInterval = (long) C.get(&quot;cmdIntervalMs&quot;)
+
+vars.put(&quot;frameType&quot;, &quot;&quot;)
+vars.put(&quot;wakeLatencyMs&quot;, &quot;&quot;)
+
+def setAll = { Map m -&gt; m.each { k, v -&gt; vars.put(k, String.valueOf(v)) } }
+
+// End of the terminal connection: WAKE_GRACE_SEC after its last command (at least WS_MIN_DURATION_SEC),
+// in any case within WS_MAX_DURATION_SEC. Both durations start from its first connection.
+def terminalEnd = {
+    long first = getL(&quot;firstOpenTs&quot;)
+    long hard = first + (long) C.get(&quot;maxDurationMs&quot;)
+    if (getL(&quot;cmdSent&quot;) &lt; cmdPerTerminal) { return hard }
+    long base = cmdPerTerminal &gt; 0 ? getL(&quot;lastCmdTs&quot;) : first
+    return Math.min(hard, Math.max(first + (long) C.get(&quot;minDurationMs&quot;), base + (long) C.get(&quot;graceMs&quot;)))
+}
+
+def endSession = { boolean canRetry -&gt;
+    boolean retry = canRetry &amp;&amp; (boolean) C.get(&quot;reconnect&quot;) &amp;&amp; now &lt; terminalEnd() - 5000L
+    setAll(wsSession: retry, reconnectPause: retry)
+}
+
+def drop = { String reason -&gt;
+    if (vars.get(&quot;wsAlive&quot;) == &quot;true&quot;) {
+        inc(&quot;ws_drop&quot;)
+        C.get(&quot;droppedTerminals&quot;).add(tid)
+        log.warn(&quot;Connection lost: terminalId=&quot; + tid + &quot; phase=&quot; + phase + &quot; reason=&quot; + reason)
+    }
+    setAll(wsAlive: false, authWaiting: false, wsContinue: false, pingDue: false, pongDue: false, cmdDue: false,
+           drainMore: false, closeNeeded: false, wsPhase: &quot;END&quot;)
+    endSession(true)
+}
+
+def startDrain = {
+    setAll(wsContinue: false, pingDue: false, pongDue: false, cmdDue: false, wsPhase: &quot;DRAIN&quot;,
+           drainMore: true, drainCount: 0, closeNeeded: true)
+    endSession(false)
+}
+
+// Recomputes the state of the listening loop (1.2): the read waits until the next PING or command.
+def monitor = {
+    if (vars.get(&quot;wsAlive&quot;) != &quot;true&quot;) { return }
+    long end = terminalEnd()
+    if (now &gt;= end) { startDrain(); return }
+    long toPing = pingInterval - (now - getL(&quot;lastPingTs&quot;))
+    boolean cmdPending = getL(&quot;cmdSent&quot;) &lt; cmdPerTerminal &amp;&amp; vars.get(&quot;nextCmdTs&quot;) != null
+    long toCmd = cmdPending ? getL(&quot;nextCmdTs&quot;) - now : Long.MAX_VALUE
+    setAll(pingDue: toPing &lt;= 250L, cmdDue: cmdPending &amp;&amp; toCmd &lt;= 250L, wsContinue: true, wsPhase: &quot;MON&quot;,
+           readTimeoutMs: Math.max(250L, [toPing, toCmd, end - now].min()))
+}
+
+// AUTH completed (or not confirmed with AUTH_STRICT=false): keepalive starts and, on the first session, the command plan.
+def authDone = {
+    setAll(authWaiting: false, lastPingTs: now)
+    if (vars.get(&quot;nextCmdTs&quot;) == null) {
+        // Steps: terminals with commands are split into CMD_STEPS groups; group g starts g*CMD_STEP_SEC later.
+        long offset = cmdPlanT == null ? 0L : (long) cmdPlanT[0]
+        long first = (boolean) C.get(&quot;cmdProfile&quot;) ? Math.max((long) C.get(&quot;cmdAnchorTs&quot;) + offset, now + 1000L) : now + cmdInterval + offset
+        vars.put(&quot;nextCmdTs&quot;, String.valueOf(first))
+    }
+    monitor()
+}
+
+// Records a WAKE and matches it (FIFO) to the oldest command still pending for the same terminal.
+def onWake = {
+    inc(&quot;wake_received&quot;)
+    long ts = prev.getEndTime()
+    def dq = Q.get(tid)
+    long[] e = null
+    if (dq != null) {
+        long win = (long) C.get(&quot;matchWindowMs&quot;)
+        while ((e = dq.pollFirst()) != null) {
+            if (ts - e[0] &gt; win) { inc(&quot;cmd_expired&quot;); continue }
+            break
+        }
+    }
+    if (e == null) {
+        inc(&quot;wake_unmatched&quot;)
+        log.warn(&quot;WAKE with no pending command: terminalId=&quot; + tid)
+        return
+    }
+    long lat = Math.max(0L, ts - e[0])
+    e[1] = lat + 1L  // marked as delivered (used by 1.2.4.2 if the POST later turns out to have failed)
+    inc(&quot;wake_matched&quot;)
+    inc(&quot;wake_latency_sum&quot;, lat)
+    S.get(&quot;wake_latency_max&quot;).accumulateAndGet(lat, { a, b -&gt; Math.max(a, b) } as java.util.function.LongBinaryOperator)
+    vars.put(&quot;wakeLatencyMs&quot;, String.valueOf(lat))
+}
+
+// Classifies a received text frame; returns its type (&quot;&quot; if no frame within the timeout).
+def classify = { String data -&gt;
+    if (data == null || data.isEmpty()) { return &quot;&quot; }
+    def m = (data =~ /&quot;type&quot;\s*:\s*&quot;([^&quot;]+)&quot;/)
+    String type = m.find() ? m.group(1) : &quot;UNKNOWN&quot;
+    vars.put(&quot;frameType&quot;, type)
+    if (type == &quot;PONG&quot;) { inc(&quot;pong_received&quot;) }
+    if (type == &quot;PING&quot;) { inc(&quot;server_ping&quot;); vars.put(&quot;pongDue&quot;, &quot;true&quot;) }
+    if (data.contains((String) C.get(&quot;wakeMatch&quot;))) { onWake() }
+    return type
+}
+
+switch (cls) {
+    case &quot;OpenWebSocketSampler&quot;:
+        int sess = Integer.parseInt(vars.get(&quot;wsSessions&quot;) ?: &quot;0&quot;) + 1
+        vars.put(&quot;wsSessions&quot;, String.valueOf(sess))
+        if (sess == 1) { vars.put(&quot;firstOpenTs&quot;, String.valueOf(now)) } else { inc(&quot;ws_reconnect_attempt&quot;) }
+        setAll(wsContinue: false, pingDue: false, pongDue: false, cmdDue: false, drainMore: false, closeNeeded: false,
+               wsSession: false, reconnectPause: false)
+        if (ok) {
+            inc(sess &gt; 1 ? &quot;ws_reconnect_ok&quot; : &quot;ws_open_ok&quot;)
+            setAll(wsAlive: true, wsPhase: &quot;AUTH&quot;, authWaiting: true, authStartTs: now, lastPingTs: now)
+        } else {
+            inc(sess &gt; 1 ? &quot;ws_reconnect_fail&quot; : &quot;ws_open_fail&quot;)
+            log.warn(&quot;WSS open failed: terminalId=&quot; + tid + &quot; - &quot; + prev.getResponseCode() + &quot; &quot; + prev.getResponseMessage())
+            setAll(wsAlive: false, wsPhase: &quot;END&quot;, authWaiting: false)
+            endSession(true)
+        }
+        break
+
+    case &quot;SingleWriteWebSocketSampler&quot;:
+        if (!ok) { drop(&quot;write failed: &quot; + prev.getResponseMessage()); break }
+        String req = sampler.getPropertyAsString(&quot;requestData&quot;)
+        if (phase == &quot;AUTH&quot;) {
+            vars.put(&quot;authStartTs&quot;, String.valueOf(now))
+        } else if (req.contains(&quot;\&quot;PING\&quot;&quot;)) {
+            inc(&quot;ping_sent&quot;)
+            vars.put(&quot;lastPingTs&quot;, String.valueOf(now))
+            monitor()
+        } else if (req.contains(&quot;\&quot;PONG\&quot;&quot;)) {
+            inc(&quot;pong_sent&quot;)
+            vars.put(&quot;pongDue&quot;, &quot;false&quot;)
+            monitor()
+        }
+        break
+
+    case &quot;HTTPSamplerProxy&quot;:
+        // POST sendCommand: the outcome (2xx + result_code) is counted by 1.2.4.2; here only the scheduling.
+        vars.put(&quot;cmdSent&quot;, String.valueOf(getL(&quot;cmdSent&quot;) + 1))
+        vars.put(&quot;lastCmdTs&quot;, String.valueOf(now))
+        long next = getL(&quot;nextCmdTs&quot;) + cmdInterval
+        vars.put(&quot;nextCmdTs&quot;, String.valueOf(next &lt; now ? now + cmdInterval : next))
+        vars.put(&quot;cmdDue&quot;, &quot;false&quot;)
+        monitor()
+        break
+
+    case &quot;SingleReadWebSocketSampler&quot;:
+        if (!ok) {
+            vars.put(&quot;frameType&quot;, &quot;ERROR&quot;)
+            drop(&quot;read failed: &quot; + prev.getResponseMessage())
+            break
+        }
+        String data = prev.getResponseDataAsString()
+        String type = classify(data)
+        if (phase == &quot;AUTH&quot;) {
+            // Log of frames received while waiting for AUTH_OK (only the first 20 of the test, to check the real format).
+            if (type != &quot;&quot; &amp;&amp; C.computeIfAbsent(&quot;authFrameLogs&quot;, { new java.util.concurrent.atomic.AtomicInteger() } as java.util.function.Function).incrementAndGet() &lt;= 20) {
+                log.info(&quot;Frame while waiting for AUTH_OK terminalId=&quot; + tid + &quot;: &quot; + data)
+            }
+            if (type != &quot;&quot; &amp;&amp; data.contains((String) C.get(&quot;authMatch&quot;))) {
+                inc(&quot;auth_ok&quot;)
+                authDone()
+            } else if (now - getL(&quot;authStartTs&quot;) &gt;= (long) C.get(&quot;authTimeoutMs&quot;)) {
+                inc(&quot;auth_unconfirmed&quot;)
+                vars.put(&quot;authWaiting&quot;, &quot;false&quot;)
+                if ((boolean) C.get(&quot;authStrict&quot;)) {
+                    inc(&quot;auth_fail&quot;)
+                    log.warn(&quot;AUTH_OK not received within timeout: terminalId=&quot; + tid + &quot; - closing (AUTH_STRICT=true)&quot;)
+                    startDrain()
+                } else {
+                    log.warn(&quot;AUTH_OK not received within timeout: terminalId=&quot; + tid + &quot; - continuing (AUTH_STRICT=false)&quot;)
+                    authDone()
+                }
+            }
+        } else if (phase == &quot;DRAIN&quot;) {
+            int dc = Integer.parseInt(vars.get(&quot;drainCount&quot;) ?: &quot;0&quot;) + 1
+            vars.put(&quot;drainCount&quot;, String.valueOf(dc))
+            if (type == &quot;&quot; || dc &gt;= 50) { vars.put(&quot;drainMore&quot;, &quot;false&quot;) }
+        } else {
+            monitor()
+        }
+        break
+
+    case &quot;CloseWebSocketSampler&quot;:
+        inc(ok ? &quot;ws_close_ok&quot; : &quot;ws_close_fail&quot;)
+        if (!ok) { log.warn(&quot;Irregular close terminalId=&quot; + tid + &quot;: &quot; + prev.getResponseMessage()) }
+        setAll(wsAlive: false, closeNeeded: false, drainMore: false, wsPhase: &quot;END&quot;, wsSession: false, reconnectPause: false)
+        break
+}</stringProp>
+</JSR223PostProcessor>
+<hashTree/>
+<WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="1.0 - WSS session">
+<stringProp name="TestPlan.comments">One session = open + AUTH + listening/commands + close. Repeated only when reconnect is enabled.</stringProp>
+<stringProp name="WhileController.condition">${__groovy(vars.get(&apos;wsSession&apos;) != &apos;false&apos;)}</stringProp>
+</WhileController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.OpenWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.OpenWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.OpenWebSocketSampler" testname="1.1 - Open WSS connection">
+<stringProp name="TestPlan.comments">Fails by itself if the upgrade does not succeed.</stringProp>
+<stringProp name="server">${WS_HOST}</stringProp>
+<stringProp name="port">${WS_PORT}</stringProp>
+<stringProp name="path">${__P(WS_PATH,/ws)}?id=${terminalId}</stringProp>
+<boolProp name="TLS">true</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="readTimeout">6000</stringProp>
+</eu.luminis.jmeter.wssampler.OpenWebSocketSampler>
+<hashTree/>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.1.1 - Connection open">
+<stringProp name="IfController.condition">${wsAlive}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="1.1.2 - Send application AUTH">
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<stringProp name="requestData">{&quot;type&quot;:&quot;AUTH&quot;,&quot;payload&quot;:&quot;${__property(JWT_TOKEN)}&quot;}</stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="loadDataFromFile">false</boolProp>
+<stringProp name="dataFile"></stringProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="payloadType">Text</stringProp>
+</eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+<hashTree/>
+<WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="1.1.3 - Wait for AUTH_OK">
+<stringProp name="TestPlan.comments">Reads until AUTH_OK (AUTH_OK_MATCH) arrives or AUTH_TIMEOUT_MS expires. Discards the open OK.</stringProp>
+<stringProp name="WhileController.condition">${authWaiting}</stringProp>
+</WhileController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="1.1.3 - Read AUTH response">
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="binaryPayload">false</boolProp>
+<boolProp name="optional">true</boolProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="dataType">Text</stringProp>
+<stringProp name="readTimeout">2000</stringProp>
+</eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+<hashTree/>
+</hashTree>
+<WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="1.2 - Continuous listening: push, keepalive and commands">
+<stringProp name="TestPlan.comments">Until WAKE_GRACE_SEC after the last command of the terminal (at least WS_MIN_DURATION_SEC, at most WS_MAX_DURATION_SEC from the first connection). Exits immediately if the connection drops.</stringProp>
+<stringProp name="WhileController.condition">${wsContinue}</stringProp>
+</WhileController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="1.2.1 - Read from push server">
+<stringProp name="TestPlan.comments">The read waits until the next PING or command (readTimeoutMs computed by 1.0): every frame is picked up as soon as it arrives.</stringProp>
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="binaryPayload">false</boolProp>
+<boolProp name="optional">true</boolProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="dataType">Text</stringProp>
+<stringProp name="readTimeout">${readTimeoutMs}</stringProp>
+</eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+<hashTree/>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.2.2 - PING from server">
+<stringProp name="TestPlan.comments">Replies with PONG if the server sends an application PING.</stringProp>
+<stringProp name="IfController.condition">${pongDue}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="1.2.2 - Reply PONG">
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<stringProp name="requestData">{&quot;type&quot;:&quot;PONG&quot;,&quot;payload&quot;:null}</stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="loadDataFromFile">false</boolProp>
+<stringProp name="dataFile"></stringProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="payloadType">Text</stringProp>
+</eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+<hashTree/>
+</hashTree>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.2.3 - PING due">
+<stringProp name="TestPlan.comments">PING every PING_INTERVAL_MS (default 25000).</stringProp>
+<stringProp name="IfController.condition">${pingDue}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="1.2.3 - Send application PING (keepalive)">
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<stringProp name="requestData">{&quot;type&quot;:&quot;PING&quot;}</stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="loadDataFromFile">false</boolProp>
+<stringProp name="dataFile"></stringProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="payloadType">Text</stringProp>
+</eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+<hashTree/>
+</hashTree>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.2.4 - Command due">
+<stringProp name="TestPlan.comments">CMD_PER_TERMINAL commands, one every CMD_INTERVAL_MS; the first one CMD_INTERVAL_MS after AUTH. Only for the last CMD_TERMINALS terminals started.</stringProp>
+<stringProp name="IfController.condition">${cmdDue}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="1.2.4 - POST sendCommand">
+<stringProp name="TestPlan.comments">Sent by the terminal thread itself: while the POST is in progress the thread does not read, so the POST-&gt;WAKE latency cannot go below the POST response time.</stringProp>
+<stringProp name="HTTPSampler.domain">${WS_HOST}</stringProp>
+<stringProp name="HTTPSampler.port">${WS_PORT}</stringProp>
+<stringProp name="HTTPSampler.protocol">https</stringProp>
+<stringProp name="HTTPSampler.path">${__P(COMMAND_PATH,/commands)}</stringProp>
+<boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+<stringProp name="HTTPSampler.method">POST</stringProp>
+<boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+<boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+<elementProp name="HTTPsampler.Arguments" elementType="Arguments"><collectionProp name="Arguments.arguments"><elementProp name="" elementType="HTTPArgument"><boolProp name="HTTPArgument.always_encode">false</boolProp><stringProp name="Argument.value">${commandPayload}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp></collectionProp></elementProp>
+</HTTPSamplerProxy>
+<hashTree>
+<HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Header - sendCommand">
+<stringProp name="TestPlan.comments">Added on top of the group Authorization header.</stringProp>
+<collectionProp name="HeaderManager.headers"><elementProp name="" elementType="Header"><stringProp name="Header.name">Content-Type</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">Accept</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp><elementProp name="" elementType="Header"><stringProp name="Header.name">Cookie</stringProp><stringProp name="Header.value">refresh_token=${__property(REFRESH_TOKEN)}</stringProp></elementProp></collectionProp>
+</HeaderManager>
+<hashTree/>
+<JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="1.2.4.1 - Build command payload + register command waiting for WAKE">
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import groovy.json.JsonOutput
+import java.util.concurrent.ConcurrentLinkedDeque
+
+// Builds the payload for the sendCommand POST (sample command DISPLAY_INPUT_PROMPT).
+String terminalId = vars.get(&quot;terminalId&quot;)
+String feId = UUID.randomUUID().toString().replace(&quot;-&quot;, &quot;&quot;).substring(0, 14)
+long sentAt = System.currentTimeMillis()
+String validityStart = new Date(sentAt).format(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&apos;Z&apos;&quot;, TimeZone.getTimeZone(&quot;UTC&quot;))
+String validityEnd = new Date(sentAt + 5 * 60 * 1000).format(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&apos;Z&apos;&quot;, TimeZone.getTimeZone(&quot;UTC&quot;))
+
+def innerData = [
+    data: [
+        prompt: [
+            terminalId: terminalId,
+            registerId: &quot;00000001&quot;,
+            title     : &quot;ENTER AMOUNT&quot;,
+            text      : &quot;PLEASE ENTER THE AMOUNT&quot;,
+            inputType : 2,
+            timeout   : 60,
+            confirm   : true
+        ],
+        modal: [
+            title  : &quot;AMOUNT&quot;,
+            type   : &quot;num_pad&quot;,
+            onInput: true,
+            unshift: true
+        ]
+    ],
+    from       : terminalId,
+    to         : terminalId,
+    commandName: &quot;DISPLAY_INPUT_PROMPT&quot;,
+    feId       : feId
+]
+
+def outerPayload = [
+    commandId        : &quot;1&quot;,
+    parameters        : [[name: &quot;data&quot;, type: &quot;text&quot;, value: JsonOutput.toJson(innerData)]],
+    terminalId        : (terminalId as Integer),
+    validityStartDate : validityStart,
+    validityEndDate   : validityEnd
+]
+
+String body = JsonOutput.toJson(outerPayload)
+vars.put(&quot;commandPayload&quot;, body)
+
+// Registers the command as &quot;waiting for WAKE&quot; BEFORE sending: the WAKE can reach
+// the terminal even before the POST gets its response. Removed in 1.2.4.2 if the POST fails.
+def Q = props.get(&quot;PT_PENDING&quot;)
+if (Q != null) {
+    long[] entry = [System.currentTimeMillis(), 0L] as long[]
+    Q.computeIfAbsent(terminalId, { new ConcurrentLinkedDeque&lt;long[]&gt;() } as java.util.function.Function).addLast(entry)
+    vars.putObject(&quot;ptEntry&quot;, entry)
+}
+
+log.debug(&quot;sendCommand -&gt; terminalId=&quot; + terminalId + &quot; feId=&quot; + feId)</stringProp>
+</JSR223PreProcessor>
+<hashTree/>
+<JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="1.2.4.2 - Check 2xx + result_code 00">
+<stringProp name="TestPlan.comments">POST OK only with 2xx and result_code 00 (searched at any level of the JSON); -JCHECK_RESULT_CODE=false to check only the 2xx.</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">import groovy.json.JsonSlurper
+import java.util.concurrent.atomic.AtomicLong
+
+// Real outcome of the POST: 2xx + result_code &quot;00&quot; (searched at any level of the JSON).
+// Updates the command counters; if the POST fails the command is no longer &quot;waiting for WAKE&quot;.
+def S = props.get(&quot;PT_STATS&quot;)
+def C = props.get(&quot;PT_CTRL&quot;)
+def Q = props.get(&quot;PT_PENDING&quot;)
+
+def findKey
+findKey = { obj, String key -&gt;
+    if (obj instanceof Map) {
+        if (obj.containsKey(key)) { return obj.get(key) }
+        for (v in obj.values()) { def r = findKey(v, key); if (r != null) { return r } }
+    } else if (obj instanceof List) {
+        for (v in obj) { def r = findKey(v, key); if (r != null) { return r } }
+    }
+    return null
+}
+
+String code = prev.getResponseCode() ?: &quot;&quot;
+String failure = null
+if (!code.startsWith(&quot;2&quot;)) {
+    failure = &quot;HTTP &quot; + code
+} else if (C == null || (boolean) C.get(&quot;checkResultCode&quot;)) {
+    def rc = null
+    try { rc = findKey(new JsonSlurper().parseText(prev.getResponseDataAsString()), &quot;result_code&quot;) } catch (Exception ignored) { }
+    if (rc == null) { failure = &quot;result_code missing from response&quot; }
+    else if (rc.toString() != &quot;00&quot;) { failure = &quot;result_code=&quot; + rc }
+}
+
+if (S != null) {
+    S.computeIfAbsent(failure == null ? &quot;cmd_sent_ok&quot; : &quot;cmd_sent_ko&quot;, { new AtomicLong() } as java.util.function.Function).incrementAndGet()
+}
+if (failure != null) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage(&quot;sendCommand not accepted: &quot; + failure)
+    def entry = vars.getObject(&quot;ptEntry&quot;)
+    def dq = Q?.get(vars.get(&quot;terminalId&quot;))
+    if (entry != null &amp;&amp; dq != null &amp;&amp; !dq.remove(entry) &amp;&amp; entry[1] &gt; 0L &amp;&amp; S != null) {
+        // WAKE already arrived (and matched) for a command the POST reports as failed:
+        // move it from &quot;delivered&quot; to a dedicated counter.
+        S.get(&quot;cmd_wake_on_failed_post&quot;).incrementAndGet()
+        S.get(&quot;wake_matched&quot;).decrementAndGet()
+        S.get(&quot;wake_latency_sum&quot;).addAndGet(-(entry[1] - 1L))
+    }
+}
+vars.remove(&quot;ptEntry&quot;)</stringProp>
+</JSR223Assertion>
+<hashTree/>
+</hashTree>
+</hashTree>
+</hashTree>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.2.8 - Regular close">
+<stringProp name="IfController.condition">${closeNeeded}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="1.2.9 - Drain the queue before closing">
+<stringProp name="TestPlan.comments">Reads until the queue is empty (1s read with no frame), max 50 frames: frames read here are counted.</stringProp>
+<stringProp name="WhileController.condition">${drainMore}</stringProp>
+</WhileController>
+<hashTree>
+<eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="1.2.9 - Read drain">
+<stringProp name="server"></stringProp>
+<stringProp name="port"></stringProp>
+<stringProp name="path"></stringProp>
+<boolProp name="createNewConnection">false</boolProp>
+<boolProp name="binaryPayload">false</boolProp>
+<boolProp name="optional">true</boolProp>
+<boolProp name="TLS">false</boolProp>
+<stringProp name="connectTimeout">20000</stringProp>
+<stringProp name="dataType">Text</stringProp>
+<stringProp name="readTimeout">1000</stringProp>
+</eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+<hashTree/>
+</hashTree>
+<eu.luminis.jmeter.wssampler.CloseWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.CloseWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.CloseWebSocketSampler" testname="1.3 - Close connection">
+<stringProp name="statusCode">1000</stringProp>
+<stringProp name="readTimeout">6000</stringProp>
+</eu.luminis.jmeter.wssampler.CloseWebSocketSampler>
+<hashTree/>
+</hashTree>
+</hashTree>
+<IfController guiclass="IfControllerPanel" testclass="IfController" testname="1.4 - Reconnect">
+<stringProp name="TestPlan.comments">Only with -JWS_RECONNECT=true: after a drop it reopens the connection; missing commands resume after AUTH.</stringProp>
+<stringProp name="IfController.condition">${reconnectPause}</stringProp>
+<boolProp name="IfController.evaluateAll">false</boolProp>
+<boolProp name="IfController.useExpression">true</boolProp>
+</IfController>
+<hashTree>
+<TestAction guiclass="TestActionGui" testclass="TestAction" testname="1.4.1 - Pause before reconnecting">
+<intProp name="ActionProcessor.action">1</intProp>
+<intProp name="ActionProcessor.target">0</intProp>
+<stringProp name="ActionProcessor.duration">${__P(RECONNECT_DELAY_MS,5000)}</stringProp>
+</TestAction>
+<hashTree/>
+</hashTree>
+</hashTree>
+</hashTree>
+<ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="false">
+<stringProp name="TestPlan.comments">Disabled: GUI debugging only. For load runs use -l and the summary file.</stringProp>
+<boolProp name="ResultCollector.error_logging">false</boolProp>
+<objProp><name>saveConfig</name><value class="SampleSaveConfiguration"><time>true</time><latency>true</latency><timestamp>true</timestamp><success>true</success><label>true</label><code>true</code><message>true</message><threadName>true</threadName><dataType>true</dataType><encoding>false</encoding><assertions>true</assertions><subresults>true</subresults><responseData>false</responseData><samplerData>false</samplerData><xml>false</xml><fieldNames>true</fieldNames><responseHeaders>false</responseHeaders><requestHeaders>false</requestHeaders><responseDataOnError>false</responseDataOnError><saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage><assertionsResultsToSave>0</assertionsResultsToSave><bytes>true</bytes><threadCounts>true</threadCounts><idleTime>true</idleTime></value></objProp>
+<stringProp name="filename"></stringProp>
+</ResultCollector>
+<hashTree/>
+<ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="false">
+<stringProp name="TestPlan.comments">Disabled: GUI debugging only. For load runs use -l and the summary file.</stringProp>
+<boolProp name="ResultCollector.error_logging">false</boolProp>
+<objProp><name>saveConfig</name><value class="SampleSaveConfiguration"><time>true</time><latency>true</latency><timestamp>true</timestamp><success>true</success><label>true</label><code>true</code><message>true</message><threadName>true</threadName><dataType>true</dataType><encoding>false</encoding><assertions>true</assertions><subresults>true</subresults><responseData>false</responseData><samplerData>false</samplerData><xml>false</xml><fieldNames>true</fieldNames><responseHeaders>false</responseHeaders><requestHeaders>false</requestHeaders><responseDataOnError>false</responseDataOnError><saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage><assertionsResultsToSave>0</assertionsResultsToSave><bytes>true</bytes><threadCounts>true</threadCounts><idleTime>true</idleTime></value></objProp>
+<stringProp name="filename"></stringProp>
+</ResultCollector>
+<hashTree/>
+<JSR223Listener guiclass="TestBeanGUI" testclass="JSR223Listener" testname="3 - Live summary (file updated at runtime)">
+<stringProp name="TestPlan.comments">Rewrites results/connection_summary_&lt;start&gt;.txt at most once per second.</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">// Live summary to file (results/connection_summary_&lt;start&gt;.txt): at most one write per second.
+def render = props.get(&quot;PT_RENDER&quot;)
+def C = props.get(&quot;PT_CTRL&quot;)
+if (render == null || C == null || props.get(&quot;PT_FINAL&quot;) == &quot;true&quot;) { return }
+if (!prev.getSampleLabel().startsWith(&quot;1.&quot;)) { return }
+def lastWrite = C.get(&quot;lastWriteTs&quot;)
+long last = lastWrite.get()
+long now = System.currentTimeMillis()
+// compareAndSet: with many parallel threads only one update per second goes through.
+if (now - last &lt; 1000L || !lastWrite.compareAndSet(last, now)) { return }
+render.call(false)</stringProp>
+</JSR223Listener>
+<hashTree/>
+<PostThreadGroup guiclass="PostThreadGroupGui" testclass="PostThreadGroup" testname="3 - Final summary">
+<stringProp name="ThreadGroup.num_threads">1</stringProp>
+<stringProp name="ThreadGroup.ramp_time">1</stringProp>
+<boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+<stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+<elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller"><stringProp name="LoopController.loops">1</stringProp><boolProp name="LoopController.continue_forever">false</boolProp></elementProp>
+</PostThreadGroup>
+<hashTree>
+<JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="3.1 - Final summary and result">
+<stringProp name="TestPlan.comments">Writes the FINAL version of the summary and fails if the result is KO (lost messages threshold LOSS_THRESHOLD_PCT).</stringProp>
+<stringProp name="scriptLanguage">groovy</stringProp>
+<stringProp name="parameters"></stringProp>
+<stringProp name="filename"></stringProp>
+<stringProp name="cacheKey">true</stringProp>
+<stringProp name="script">// Final summary: rewrites the file with the result and fails this sample if the result is KO.
+def render = props.get(&quot;PT_RENDER&quot;)
+if (render == null) {
+    SampleResult.setSuccessful(false)
+    SampleResult.setResponseMessage(&quot;Counters not initialized (setUp 0.5 not executed)&quot;)
+    return
+}
+props.put(&quot;PT_FINAL&quot;, &quot;true&quot;)
+def res = render.call(true)
+String text = res[0]
+boolean esitoOk = res[1]
+log.info(&quot;\n&quot; + text)
+SampleResult.setResponseData(text, &quot;UTF-8&quot;)
+SampleResult.setResponseMessage(esitoOk ? &quot;Result OK&quot; : &quot;Result KO&quot;)
+SampleResult.setSuccessful(esitoOk)</stringProp>
+</JSR223Sampler>
+<hashTree/>
+</hashTree>
+</hashTree>
+</hashTree>
+</jmeterTestPlan>

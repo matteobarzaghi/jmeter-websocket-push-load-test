@@ -1,0 +1,17 @@
+# Local configuration and credentials
+.env
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Test data (terminal IDs)
+device_ids.csv
+*.bak
+
+# Results, logs and generated reports
+results/
+report/
+*.jtl
+*.log
